@@ -21,6 +21,14 @@ class RetrievalController:
     def query(self, question, top_k):
         if top_k < 1:
             raise ValueError("top_k must be positive")
+        queued = time.monotonic()
+        with self.client.retrieval_slot():
+            queue_seconds = time.monotonic() - queued
+            context, answer_context = self._query(question, top_k)
+            context.metadata["retrieval_queue_seconds"] = queue_seconds
+            return context, answer_context
+
+    def _query(self, question, top_k):
         started = time.monotonic()
         cfg, trg = self.config, self.engine.trg
         budget = CallBudget(cfg.maximum_jev_calls, started + cfg.max_latency_seconds)
@@ -181,7 +189,7 @@ class RetrievalController:
             stop_reason = "max_latency"
         selected = sorted(nodes, key=lambda key: (-scores[key], key))[:top_k]
         chosen = [nodes[key] for key in selected]
-        metadata = {"controller": "jev-mem", "query_id": hashlib.sha256(question.encode()).hexdigest()[:16],
+        metadata = {"controller": "jev-mem", "decision_backend": cfg.decision_backend, "query_id": hashlib.sha256(question.encode()).hexdigest()[:16],
                     "graph_needs": asdict(needs), "graph_budgets": allocations,
                     "graph_budget_used": used, "nodes_visited": len(nodes), "edges_examined": edges_examined,
                     "jev_calls": budget.calls, "jev_cache_hits": budget.cache_hits, "llm_calls": 0,

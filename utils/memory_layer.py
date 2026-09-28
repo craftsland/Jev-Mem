@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional, Literal, Any, Union
 import json
 from datetime import datetime
+from memory.local_device import local_model_device
 import uuid
 import numpy as np
 import os
@@ -68,7 +69,7 @@ class OpenAIController(BaseLLMController):
                 api_key = os.getenv('OPENAI_API_KEY')
             if api_key is None:
                 raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY environment variable.")
-            self.client = OpenAI(api_key=api_key)
+            self.client = OpenAI(api_key=api_key, base_url=os.getenv("OPENAI_BASE_URL") or None)
             # Track token usage across all API calls
             self.token_usage = {
                 'prompt_tokens': [],
@@ -307,7 +308,7 @@ class HybridRetriever:
             model_name: Name of the SentenceTransformer model to use
             alpha: Weight for combining BM25 and semantic scores (0 = only BM25, 1 = only semantic)
         """
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, device=local_model_device())
         self.alpha = alpha
         self.bm25 = None
         self.corpus = []
@@ -445,7 +446,7 @@ class SimpleEmbeddingRetriever:
         Args:
             model_name: Name of the SentenceTransformer model to use
         """
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, device=local_model_device())
         self.corpus = []
         self.embeddings = None
         self.document_ids = {}

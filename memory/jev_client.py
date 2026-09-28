@@ -5,6 +5,7 @@ Protocol: https://docs.typesafe.ai/api
 """
 
 from collections import OrderedDict
+from contextlib import nullcontext
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
 from email.utils import parsedate_to_datetime
@@ -87,7 +88,12 @@ class JevClient:
         self.audit = audit or DecisionLog(self.config.audit_path)
         self.cache = OrderedDict()
         self.lock = threading.Lock()
+        self._retrieval_lock = threading.Lock()
         self._sdk = None
+        self._laya = None
+        if self.config.decision_backend in ("laya", "laya-mlx") and not self.config.jev_mock:
+            from .laya_backend import LayaBackend
+            self._laya = LayaBackend(self.config)
 
     def _get_sdk(self):
         with self.lock:
@@ -99,7 +105,20 @@ class JevClient:
                 )
             return self._sdk
 
+    def retrieval_slot(self):
+        """Queue local retrievals before their deadline starts.
+
+        Laya already serializes model calls. Let one retrieval finish its calls
+        instead of making several query deadlines expire in that model queue.
+        Remote Jev and deterministic fixtures retain parallel retrieval.
+        """
+        if self.config.decision_backend in ("laya", "laya-mlx") and not self.config.jev_mock:
+            return self._retrieval_lock
+        return nullcontext()
+
     def close(self):
+        if self._laya is not None:
+            self._laya.close()
         with self.lock:
             if self._sdk is not None:
                 self._sdk.close()
@@ -126,7 +145,10 @@ class JevClient:
         used as hidden context for another question.
         """
         wire = self._question_payload(questions)
-        payload = {"model": self.config.jev_model, "state": state, "questions": wire}
+        model = (self.config.laya_model if self.config.decision_backend in ("laya", "laya-mlx")
+                 else self.config.jev_model)
+        payload = {"backend": self.config.decision_backend, "model": model,
+                   "subfolder": self.config.laya_subfolder, "state": state, "questions": wire}
         key = hashlib.sha256(json.dumps({"operation": operation, **payload}, sort_keys=True, allow_nan=False).encode()).hexdigest()
         if budget is None:
             budget = CallBudget(self.config.max_retries + 1,
@@ -147,16 +169,24 @@ class JevClient:
         for attempt in range(self.config.max_retries + 1):
             retry_after = None
             try:
-                if not self.config.jev_mock and not self.api_key:
+                if not self.config.jev_mock and self.config.decision_backend == "jev" and not self.api_key:
                     raise JevUnavailable("missing_typesafe_api_key")
                 budget.consume()
                 if self.config.jev_mock:
                     values = self.mock(operation, state, questions) if self.mock else mock_values
-                    raw = {"model": self.config.jev_model, "usage": {}, "answers": {}}
+                    raw = {"model": model, "usage": {}, "answers": {}}
                     for name, question in questions.items():
                         value = (values or {})[name]
                         raw["answers"][name] = ({"type": "noul", "noul": value} if isinstance(question, Noul)
                                                 else value.model_dump() if isinstance(value, ChoiceAnswer) else value)
+                elif self.config.decision_backend in ("laya", "laya-mlx"):
+                    timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
+                    try:
+                        raw = self._laya.predict(state, wire, timeout)
+                    except TimeoutError:
+                        raise JevUnavailable("laya_deadline") from None
+                    except (OSError, RuntimeError):
+                        raise JevUnavailable("laya_inference_failed") from None
                 else:
                     timeout = min(self.config.timeout_seconds, budget.remaining_seconds())
                     response = self._get_sdk().system_one(state=state, questions=questions, timeout=timeout)
@@ -164,8 +194,8 @@ class JevClient:
                 values, choices = self._validate(raw, questions)
                 if budget.remaining_seconds() <= 0:
                     raise JevUnavailable("deadline")
-                result = ProbabilityResult(values, "mock" if self.config.jev_mock else "jev",
-                                           choices, raw.get("model", self.config.jev_model), raw.get("usage", {}))
+                result = ProbabilityResult(values, "mock" if self.config.jev_mock else self.config.decision_backend,
+                                           choices, raw.get("model", model), raw.get("usage", {}))
                 if self.config.cache_size:
                     with self.lock:
                         self.cache[key] = deepcopy(result)

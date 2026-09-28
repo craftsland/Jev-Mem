@@ -13,6 +13,11 @@ class JevMemConfig:
     read_enabled: bool = False
     admission_enabled: bool = False
     jev_mock: bool = False
+    decision_backend: str = "jev"
+    laya_model: str = "convaiinnovations/laya"
+    laya_subfolder: str = ""
+    laya_device: str = "auto"
+    laya_batch_size: int = 8
     jev_model: str = "jev-latest"
     decision_schema_version: str = "noul-choice-v3-magma-temporal"
     retrieval_schema_version: str = "anchored-temporal-v1"
@@ -47,6 +52,16 @@ class JevMemConfig:
     audit_path: str = ""
 
     def __post_init__(self):
+        if self.decision_backend not in ("jev", "laya", "laya-mlx"):
+            raise ValueError("decision_backend must be jev, laya or laya-mlx")
+        for name in ("laya_model", "laya_device"):
+            if not isinstance(getattr(self, name), str) or not getattr(self, name).strip():
+                raise ValueError(name + " must be a nonempty string")
+        if not isinstance(self.laya_subfolder, str):
+            raise ValueError("laya_subfolder must be a string")
+        if self.decision_backend == "laya-mlx" and self.laya_device not in ("auto", "cpu", "gpu", "metal"):
+            raise ValueError("laya-mlx device must be auto, cpu, gpu or metal")
+        self._integer("laya_batch_size", 1)
         for name in ("admission_threshold", "relation_threshold", "graph_activation_threshold",
                      "evidence_sufficient_threshold", "continue_threshold", "consolidation_threshold"):
             value = getattr(self, name)

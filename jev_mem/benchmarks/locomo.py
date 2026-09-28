@@ -52,6 +52,7 @@ def validate_reuse_memory(path, config):
     old = JevMemConfig(**saved).to_dict()
     current = config.to_dict()
     fields = ("write_enabled", "admission_enabled", "jev_mock", "jev_model", "decision_schema_version",
+              "decision_backend", "laya_model", "laya_subfolder",
               "relation_threshold", "candidate_top_k", "consolidation_interval", "consolidation_threshold")
     if config.admission_enabled:
         fields += ("admission_threshold", "admission_weights")
@@ -428,7 +429,7 @@ def main():
     if jev_active:
         fingerprint = hashlib.sha256(json.dumps(jev_config.to_dict(), sort_keys=True).encode()).hexdigest()[:12]
         experiment_suffix = "_jev_mem_" + fingerprint
-        print(f"Jev-Mem: write={jev_config.write_enabled}, read={jev_config.read_enabled}, admission={jev_config.admission_enabled}, mock={jev_config.jev_mock}")
+        print(f"Jev-Mem: backend={jev_config.decision_backend}, write={jev_config.write_enabled}, read={jev_config.read_enabled}, admission={jev_config.admission_enabled}, mock={jev_config.jev_mock}")
     from memory.test_harness import TestHarness
     from memory.evaluator import Evaluator
 

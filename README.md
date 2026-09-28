@@ -16,6 +16,15 @@ organizes memories and guides retrieval across semantic, temporal, causal, and
 entity relations. A **System-Two language model** synthesizes the answer from
 the evidence it finds.
 
+## 🔥 News 🔥
+
+- **2026-09-27 · Laya integration.** Jev-Mem now supports [Laya](https://huggingface.co/convaiinnovations/laya)
+  for local System-One decisions.
+  The same memory pipeline works with either Jev or Laya. [Get started ↓](#use-local-laya)
+- **2026-09-21 · Jev-Mem launch.** Our [paper](https://arxiv.org/abs/2609.23986)
+  is on arXiv, with [code on GitHub](https://github.com/libingzheren/Jev-Mem)
+  and a [demo on Hugging Face](https://huggingface.co/spaces/libingzheren/Jev-Mem).
+
 On LoCoMo with **GPT-4o-mini**, the paper reports **11.0% higher overall answer
 quality**, **6.6× faster memory construction**, and **36.7% lower query latency**
 than the strongest or fastest baseline for each metric. See [results](#results-on-locomo)
@@ -167,6 +176,34 @@ an optional ISO 8601 `timestamp`, and optional `metadata`.
 Live runs send text to the configured providers and may incur charges. Keep
 keys, conversations, and generated caches local; see [SECURITY.md](SECURITY.md)
 for handling private data.
+
+### Use local Laya
+
+**One memory system, two decision backends.** Keep Jev as the default, or run
+[Laya](https://huggingface.co/convaiinnovations/laya) locally for memory construction
+and retrieval. The graph, retrieval policies, and System-Two answer model are shared.
+
+| System-One backend | Install | Profile |
+| --- | --- | --- |
+| Jev API (default) | `pip install -r requirements.txt` | [`jev_mem.json`](config/jev_mem.json) |
+| Laya · PyTorch | `pip install '.[laya]'` | [`laya_mem.json`](config/laya_mem.json) |
+| Laya · Apple Silicon / MLX | `pip install '.[mlx]'` | [`laya_mlx_mem.json`](config/laya_mlx_mem.json) |
+
+After creating the Python environment above, try Laya on the included synthetic data:
+
+```bash
+python -m pip install '.[laya]'
+USE_TF=0 python -m jev_mem.benchmarks.locomo \
+  --dataset examples/locomo_synthetic.json \
+  --jev-config config/laya_mem.json \
+  --sample 0 --max-questions 2 --best-of-n 1 --no-parallel
+```
+
+Laya decisions need **no TypeSafe API key**. Answer generation and evaluation
+still use your configured OpenAI-compatible provider. Weights download on first
+use; Apple Silicon users can select the MLX install and profile from the table.
+The results reported above use Jev; Laya has not been benchmarked for this paper.
+See the [Laya guide](docs/laya.md) for setup, cache reuse, and model limits.
 
 ## Run experiments
 

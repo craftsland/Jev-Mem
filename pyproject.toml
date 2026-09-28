@@ -20,6 +20,10 @@ classifiers = [
 ]
 dynamic = ["dependencies"]
 
+[project.optional-dependencies]
+laya = ["laya==0.3.5"]
+mlx = ["laya-mlx==0.2.0; sys_platform == 'darwin' and platform_machine == 'arm64'"]
+
 [project.scripts]
 jev-mem = "jev_mem.cli:main"
 jev-mem-demo = "jev_mem.demo:main"

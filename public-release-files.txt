@@ -1,5 +1,6 @@
 # Explicit public source allowlist. No local credentials, datasets, or experiment artifacts.
 .env.example
+.github/workflows/ci.yml
 .gitignore
 CHANGELOG.md
 CITATION.bib
@@ -13,6 +14,8 @@ SECURITY.md
 config/README.md
 config/jev_mem.json
 config/jev_mem_accuracy.json
+config/laya_mem.json
+config/laya_mlx_mem.json
 data/README.md
 docs/README.md
 docs/architecture.md
@@ -21,6 +24,7 @@ docs/figures/README.md
 docs/figures/overall_structure.pdf
 docs/figures/overall_structure.png
 docs/figures/overview.png
+docs/laya.md
 docs/releasing.md
 examples/README.md
 examples/locomo_synthetic.json
@@ -53,7 +57,9 @@ memory/jev_mem_policies.py
 memory/jev_mem_retrieval.py
 memory/jev_questions.py
 memory/keyword_enrichment.py
+memory/laya_backend.py
 memory/llm_judge.py
+memory/local_device.py
 memory/longmemeval_evaluator.py
 memory/longmemeval_jev.py
 memory/memory_builder.py
@@ -76,10 +82,13 @@ scripts/export_public_repo.py
 setup.sh
 test_fixed_memory.py
 test_longmemeval_chunked.py
+tests/test_backend_cache.py
 tests/test_jev_mem.py
+tests/test_laya_backend.py
 tests/test_longmemeval_jev.py
 tests/test_metric_resources.py
 tests/test_naming.py
+tests/test_native_runtime.py
 tests/test_project_layout.py
 tests/test_public_release.py
 utils/__init__.py

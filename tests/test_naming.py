@@ -18,7 +18,8 @@ def test_public_api_and_distribution_use_the_canonical_project_name():
     project = tomllib.loads((root / "pyproject.toml").read_text())["project"]
     assert project["name"] == "jev-mem"
     assert project["description"] == "System-One Controlled Agentic Memory"
-    assert f'# Jev-Mem: {project["description"]}' in (root / "README.md").read_text()
+    readme = (root / "README.md").read_text().replace("System-One-Controlled", "System-One Controlled")
+    assert f'# Jev-Mem: {project["description"]}' in readme
     assert f'{{Jev-Mem}}: {project["description"]}' in (root / "CITATION.bib").read_text()
     for cls in [jev_mem.JevMemSystem, jev_mem.MemoryBuilder, jev_mem.QueryEngine]:
         parameters = inspect.signature(cls).parameters

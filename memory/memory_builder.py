@@ -163,7 +163,7 @@ class MemoryBuilder:
             "entities": sorted(set(entities)), "keywords": keywords,
             "jev_mem": {"admission_enabled": self.jev_config.admission_enabled,
                         "admission": admission_data, "admission_score": score,
-                        "memory_type": asdict(memory_type), "controller": "mock" if self.jev_config.jev_mock else "jev"}})
+                        "memory_type": asdict(memory_type), "controller": "mock" if self.jev_config.jev_mock else self.jev_config.decision_backend}})
         node.attributes["temporal_references"] = self.temporal_parser.describe_references(interaction, timestamp)
         enriched = self.trg.keyword_enricher.enrich_content(interaction, metadata=node.attributes)
         embedding = np.asarray(self.trg.encoder.encode(enriched)).reshape(-1)
@@ -1330,6 +1330,8 @@ class MemoryBuilder:
         source_dir = Path(cache_dir) if cache_dir is not None else self.cache_dir
         graph_path = source_dir / "graph.json"
         if graph_path.exists():
+            from .cache_compat import validate_cached_backend
+            validate_cached_backend(source_dir, self.jev_config)
             self.trg.graph_db.load(str(graph_path))
 
         vector_path = source_dir / "vectors"

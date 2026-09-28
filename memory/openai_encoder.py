@@ -11,7 +11,7 @@ class OpenAIVectorEncoder:
         self.dimension = int(dimension or os.getenv("OPENAI_EMBEDDING_DIMENSIONS", "1536"))
         if self.dimension <= 0:
             raise ValueError("Embedding dimension must be positive")
-        self.client = client if client is not None else OpenAI()
+        self.client = client if client is not None else OpenAI(base_url=os.getenv("OPENAI_BASE_URL") or None)
 
     def encode(self, texts, timeout_seconds=None):
         return self.encode_batch([texts] if isinstance(texts, str) else texts, timeout_seconds=timeout_seconds)

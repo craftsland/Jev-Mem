@@ -1,4 +1,5 @@
 import re
+from memory.local_device import local_model_device
 import string
 import numpy as np
 from typing import List, Dict, Union, Optional
@@ -83,7 +84,7 @@ def _get_sentence_model():
     with _resource_lock:
         if not _sentence_model_initialized:
             try:
-                sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+                sentence_model = SentenceTransformer('all-MiniLM-L6-v2', device=local_model_device())
             except Exception as exc:
                 logging.warning("Could not load optional semantic scoring model: %s", exc)
             _sentence_model_initialized = True
@@ -144,7 +145,8 @@ def calculate_bert_scores(prediction: str, reference: str) -> Dict[str, float]:
     try:
         # Use lock to prevent multiple threads from loading PyTorch model simultaneously
         with bert_score_lock:
-            P, R, F1 = bert_score([prediction], [reference], lang='en', verbose=False)
+            P, R, F1 = bert_score([prediction], [reference], lang='en', verbose=False,
+                                 device=local_model_device())
         return {
             'bert_precision': P.item(),
             'bert_recall': R.item(),

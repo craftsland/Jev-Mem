@@ -2,6 +2,12 @@
 
 ## 0.1.0 — Unreleased
 
+- Add optional local Laya and Laya-MLX decision backends, shared typed validation,
+  bounded batching, serialized inference, and deadline-aware retrieval queues.
+- Keep Jev as the default, isolate backend caches, and reject explicit reuse of
+  graphs built by a different backend or Laya model. Record the selected backend
+  in memory metadata and retrieval traces.
+- Add macOS native runtime defaults and preserve custom OpenAI-compatible endpoints.
 - Include both architecture figures in source releases and defer optional scoring
   resource downloads until metric evaluation. Mark cache hashes as non-security uses.
 - Standardize the project title as "Jev-Mem: System-One Controlled Agentic

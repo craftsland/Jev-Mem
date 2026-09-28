@@ -7,6 +7,14 @@ This module provides the Temporal Resonance Graph Memory implementation.
 # Keep public imports compatible without initializing API clients, downloading
 # metrics models, or importing benchmark dependencies when using graph storage.
 from importlib import import_module
+import os
+import sys
+
+# Set defaults before torch, FAISS or sklearn load native OpenMP runtimes.
+# Preserve explicit tuning on installations with compatible libraries.
+if sys.platform == "darwin":
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 _MODULES = {
     "graph_db": "GraphDBInterface NetworkXGraphDB EventNode Link NodeType LinkType LinkSubType LinkStatus TraversalConstraints",

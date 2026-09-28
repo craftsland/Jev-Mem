@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import logging
 from datetime import datetime
+from .local_device import local_model_device
 
 logger = logging.getLogger(__name__)
 
@@ -563,7 +564,7 @@ class VectorEncoder:
             if model_name.startswith('text-embedding'):
                 model_name = 'all-MiniLM-L6-v2'
 
-            self.model = SentenceTransformer(model_name)
+            self.model = SentenceTransformer(model_name, device=local_model_device())
             self.dimension = self.model.get_sentence_embedding_dimension()
             logger.info(f"Using sentence-transformers ({model_name}, {self.dimension} dims)")
 

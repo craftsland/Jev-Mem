@@ -134,7 +134,7 @@ def evaluate_llm_judge(question, gold_answer, generated_answer):
     """
     global client
     if client is None:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), base_url=os.getenv("OPENAI_BASE_URL") or None)
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[

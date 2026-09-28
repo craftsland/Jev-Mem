@@ -12,6 +12,24 @@ def memory_config_path(directory):
     return current if current.exists() else directory / "sys1mem_config.json"
 
 
+def validate_cached_backend(directory, config):
+    """Reject graphs built with a different decision backend before loading them."""
+    import json
+
+    path = memory_config_path(directory)
+    saved = json.loads(path.read_text()) if path.exists() else {}
+    # Historical caches predate local backends and used Jev.
+    old_backend = saved.get("decision_backend", "jev")
+    if old_backend != config.decision_backend:
+        raise ValueError("Reuse cache has different construction settings: decision_backend")
+    if config.decision_backend in ("laya", "laya-mlx"):
+        defaults = {"laya_model": "convaiinnovations/laya", "laya_subfolder": "", "jev_mock": False}
+        changed = [key for key, default in defaults.items()
+                   if saved.get(key, default) != getattr(config, key)]
+        if changed:
+            raise ValueError("Reuse cache has different construction settings: " + ", ".join(changed))
+
+
 def normalize_metadata(metadata):
     """Copy metadata and migrate historical controller keys without data loss."""
     result = dict(metadata)

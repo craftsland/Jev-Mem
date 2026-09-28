@@ -20,7 +20,7 @@ def metrics(monkeypatch):
     meteor = ModuleType("nltk.translate.meteor_score")
     meteor.meteor_score = lambda *a: 0.75
     embeddings = ModuleType("sentence_transformers")
-    def create_model(name):
+    def create_model(name, **kwargs):
         calls.append(("model", name))
         return SimpleNamespace(encode=lambda *a, **kw: [1.0])
     embeddings.SentenceTransformer = create_model
@@ -53,7 +53,7 @@ def test_explicit_metrics_initialize_resources_once(metrics):
 
 def test_unavailable_semantic_model_is_not_repeatedly_loaded(metrics, monkeypatch):
     module, calls = metrics
-    def fail(name):
+    def fail(name, **kwargs):
         calls.append(("unavailable", name))
         raise OSError("Model is unavailable")
     monkeypatch.setattr(module, "SentenceTransformer", fail)
